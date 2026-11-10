@@ -18,6 +18,7 @@ came from. The focused window also gets a slightly thicker outline.
 - The sweep runs left, right, up or down, following the focus key you pressed
   (wrap-arounds included) or, for mouse focus, the direction between the windows.
 - Colours come from your theme's active and inactive border colours.
+- Swapping to a workspace with a single window skips the animation.
 - It switches itself off on Omarchy's floating workspaces.
 
 ## Requirements

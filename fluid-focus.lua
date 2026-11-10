@@ -279,7 +279,24 @@ trace.timer:set_enabled(false)
 
 hl.on("window.active", function(window)
   if not window then return end
+  -- Swapping workspaces on one monitor lands on a window that is alone there:
+  -- nothing to flow from, so the border just appears.
+  local known, workspace, monitor, alone = pcall(function()
+    return window.workspace.id, window.monitor.id, window.workspace.windows == 1
+  end)
+  local swapped = known and trace.workspace and workspace ~= trace.workspace and monitor == trace.monitor
+  if known then trace.workspace, trace.monitor = workspace, monitor end
   if paused_for(window) then return end
+  if swapped and alone then
+    if not trace.running then read_colours() end
+    finish_out()
+    trace.filling = false
+    trace.last = window.address
+    hl.config({ general = { col = { active_border = trace.base } } })
+    set_ring(settings.ring_focused, 1)
+    hl.exec_scheduled_prop_refresh_immediately()
+    return
+  end
   if not trace.running then
     read_colours()
     trace.running = true
