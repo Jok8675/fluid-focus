@@ -12,6 +12,9 @@ came from. The focused window also gets a slightly thicker outline.
 
 - The fill starts fast and eases to a stop; larger windows take longer.
 - The drain is quick and steady.
+- The leading end of the fill is brighter, in your theme's accent colour.
+- Quick successive focus moves build momentum: flick across several windows
+  and each fill is faster than the last. Pause and it runs back down.
 - The sweep runs left, right, up or down, following the focus key you pressed
   (wrap-arounds included) or, for mouse focus, the direction between the windows.
 - Colours come from your theme's active and inactive border colours.
