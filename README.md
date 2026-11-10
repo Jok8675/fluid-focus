@@ -42,10 +42,10 @@ Hyprland reloads on save.
 
 | Setting | Default | What it does |
 |---|---|---|
-| `px_per_step` | `196` | Fill speed: one step per this many pixels of outline. Lower is slower. |
-| `min_steps` / `max_steps` | `6` / `40` | Shortest and longest fill, in steps. |
-| `drain_steps` | `8` | Length of the drain, in steps. |
-| `step_ms` | `16` | Milliseconds per step. |
+| `fill_px_per_second` | `12250` | Fill speed, in pixels of window outline per second. Lower is slower. |
+| `fill_min_ms` / `fill_max_ms` | `100` / `640` | Shortest and longest fill, in milliseconds. |
+| `drain_ms` | `130` | Length of the drain, in milliseconds. |
+| `frame_ms` | `16` | Milliseconds between frames. |
 | `ring_focused` / `ring_filling` | `1` / `2` | Extra outline on the focused window, in pixels. Set both to `0` to disable. |
 | `rebind_focus_keys` | `true` | Rebind `SUPER + arrow` so wrap-arounds animate the way the key points. |
 

@@ -5,16 +5,16 @@
 -- https://github.com/Jok8675/fluid-focus
 
 local settings = {
-  -- Fill speed: one step per this many pixels of window outline, so larger
-  -- windows take longer. Lower is slower.
-  px_per_step = 196,
-  -- Shortest and longest fill, in steps.
-  min_steps = 6,
-  max_steps = 40,
-  -- Length of the drain on the window losing focus, in steps. Not scaled.
-  drain_steps = 8,
-  -- Milliseconds per step (one frame at 60Hz).
-  step_ms = 16,
+  -- Fill speed, in pixels of window outline per second, so larger windows
+  -- take longer. Lower is slower.
+  fill_px_per_second = 12250,
+  -- Shortest and longest fill, in milliseconds.
+  fill_min_ms = 100,
+  fill_max_ms = 640,
+  -- Length of the drain on the window losing focus, in milliseconds. Not scaled.
+  drain_ms = 130,
+  -- Milliseconds between frames (16 is one frame at 60Hz).
+  frame_ms = 16,
   -- Colour stops in the moving gradient. Hyprland allows at most 10.
   stops = 8,
   -- Extra outline on the focused window, in pixels: at rest and while filling.
@@ -29,7 +29,7 @@ local settings = {
 local omarchy = type(rawget(_G, "o")) == "table"
 local ring = settings.ring_focused > 0 or settings.ring_filling > 0
 
-local trace = { step = 0, fill_steps = 16, filling = false, running = false }
+local trace = { elapsed = 0, fill_ms = 250, filling = false, running = false }
 
 -- Hyprland's own border colour fade is off: it blends from the previous colour
 -- on every change, which shows the solid colour for a frame before the fill.
@@ -88,8 +88,8 @@ local function read_colours()
 end
 
 local function draw()
-  local fill_t = math.min(1, trace.step / trace.fill_steps)
-  local drain_t = math.min(1, trace.step / settings.drain_steps)
+  local fill_t = math.min(1, trace.elapsed / trace.fill_ms)
+  local drain_t = math.min(1, trace.elapsed / settings.drain_ms)
   local edge = 1 / (settings.stops - 1) -- Softness of the fill line.
   local fill_level = (1 - (1 - fill_t) ^ 3) * (1 + edge) -- Fill: fast start, slow finish.
   local drain_level = drain_t * (1 + edge) -- Drain: steady, no ease.
@@ -133,14 +133,14 @@ local function travel_angle(from_address, to)
   return ok and angle or nil
 end
 
--- Fill length in steps for a window, from the length of its outline.
-local function steps_for(window)
-  local ok, steps = pcall(function()
+-- Fill length in milliseconds for a window, from the length of its outline.
+local function fill_ms_for(window)
+  local ok, ms = pcall(function()
     local size = window.size
     local perimeter = 2 * ((size.x or size[1]) + (size.y or size[2]))
-    return math.floor(perimeter / settings.px_per_step + 0.5)
+    return 1000 * perimeter / settings.fill_px_per_second
   end)
-  return math.max(settings.min_steps, math.min(settings.max_steps, ok and steps or 16))
+  return math.max(settings.fill_min_ms, math.min(settings.fill_max_ms, ok and ms or 250))
 end
 
 local function finish_out()
@@ -195,9 +195,10 @@ local function paused_for(window)
 end
 
 trace.timer = hl.timer(function()
-  trace.step = trace.step + 1
-  if trace.out and trace.step >= settings.drain_steps then finish_out() end
-  if trace.filling and trace.step >= trace.fill_steps then
+  -- Time is counted in frames: Hyprland's Lua has no millisecond clock.
+  trace.elapsed = trace.elapsed + settings.frame_ms
+  if trace.out and trace.elapsed >= settings.drain_ms then finish_out() end
+  if trace.filling and trace.elapsed >= trace.fill_ms then
     trace.filling = false
     set_ring(settings.ring_focused, 1)
     hl.config({ general = { col = { active_border = trace.base } } })
@@ -209,7 +210,7 @@ trace.timer = hl.timer(function()
     return
   end
   draw()
-end, { type = "repeat", timeout = settings.step_ms })
+end, { type = "repeat", timeout = settings.frame_ms })
 trace.timer:set_enabled(false)
 
 hl.on("window.active", function(window)
@@ -228,10 +229,10 @@ hl.on("window.active", function(window)
   trace.angle = travel or 270 -- Bottom-up when there is nothing to come from.
   -- A focus key always animates the way it points, wrap-arounds included.
   if trace.pressed then trace.angle = trace.pressed end
-  trace.fill_steps = steps_for(window)
+  trace.fill_ms = fill_ms_for(window)
   trace.filling = true
   trace.last = window.address
-  trace.step = 0
+  trace.elapsed = 0
   draw() -- First frame right away, so the solid colour never flashes.
   trace.timer:set_enabled(true)
 end)
