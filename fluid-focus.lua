@@ -16,11 +16,29 @@ local settings = {
   -- Milliseconds between frames (16 is one frame at 60Hz).
   frame_ms = 16,
   -- Colour stops in the moving gradient. Hyprland allows at most 10.
-  stops = 8,
+  stops = 10,
   -- Extra outline on the focused window, in pixels: at rest and while filling.
   -- Set both to 0 to leave Hyprland's shadow settings alone.
   ring_focused = 1,
   ring_filling = 2,
+  -- Brighten the leading end of the fill line while it travels.
+  bright_lead = true,
+  -- Colour of the leading end: "white", a hex colour such as "#ffcc66", or the
+  -- name of a colour in the Omarchy theme's colors.toml, such as "accent" or
+  -- "bright_blue". White is used when the colour cannot be found or is too
+  -- close to the border colour to show.
+  bright_lead_colour = "accent",
+  -- How far the leading end is pushed towards that colour: 0 is none, 1 is all
+  -- the way.
+  bright_lead_strength = 1,
+  -- Quick successive focus moves build momentum: each fill is faster than the
+  -- last, up to full after three quick moves.
+  momentum = true,
+  -- Moves closer together than this, in milliseconds, build momentum; slower
+  -- ones let it run down.
+  momentum_ms = 300,
+  -- How much faster the fill is at full momentum: 0.6 is 60% faster.
+  momentum_speed = 0.6,
   -- Rebind SUPER + arrow focus keys so a wrap-around animates the way the key
   -- points. The keys keep their normal action.
   rebind_focus_keys = true,
@@ -29,7 +47,11 @@ local settings = {
 local omarchy = type(rawget(_G, "o")) == "table"
 local ring = settings.ring_focused > 0 or settings.ring_filling > 0
 
-local trace = { elapsed = 0, fill_ms = 250, filling = false, running = false }
+local trace = { elapsed = 0, fill_ms = 250, filling = false, running = false, momentum = 0 }
+
+-- One move adds a third of full momentum, and that third runs down again over
+-- momentum_ms, so only moves closer together than that build it up.
+local MOMENTUM_STEP = 1 / 3
 
 -- Hyprland's own border colour fade is off: it blends from the previous colour
 -- on every change, which shows the solid colour for a frame before the fill.
@@ -81,9 +103,31 @@ local function set_ring(range, strength)
   hl.config({ decoration = { shadow = { range = range, color = mix(clear, trace.to, strength) } } })
 end
 
+-- The colour the leading end of the fill is pushed towards, as channels.
+local function lead_colour()
+  local want = settings.bright_lead_colour
+  local hex = want:match("^#?(%x%x%x%x%x%x)$")
+  if not hex and want ~= "white" then
+    local file = io.open((os.getenv("HOME") or "") .. "/.local/state/omarchy/current/theme/colors.toml")
+    if file then
+      local text = "\n" .. file:read("a")
+      file:close()
+      hex = text:match("\n" .. want .. '%s*=%s*"#(%x%x%x%x%x%x)"')
+    end
+  end
+  if hex then
+    local picked = channels("0x" .. hex)
+    local gap = 0
+    for c = 2, 4 do gap = gap + math.abs(picked[c] - trace.to[c]) end
+    if gap >= 48 then return { trace.to[1], picked[2], picked[3], picked[4] } end
+  end
+  return { trace.to[1], 255, 255, 255 }
+end
+
 local function read_colours()
   trace.base = hl.get_config("general.col.active_border")
   trace.to = channels(trace.base.colors[1])
+  trace.lead = channels(mix(trace.to, lead_colour(), settings.bright_lead_strength))
   trace.from = channels(hl.get_config("general.col.inactive_border").colors[1])
 end
 
@@ -93,10 +137,21 @@ local function draw()
   local edge = 1 / (settings.stops - 1) -- Softness of the fill line.
   local fill_level = (1 - (1 - fill_t) ^ 3) * (1 + edge) -- Fill: fast start, slow finish.
   local drain_level = drain_t * (1 + edge) -- Drain: steady, no ease.
+  -- The bright leading end fades out as the fill lands, so nothing pops when
+  -- the border settles on the plain colour.
+  local glow = settings.bright_lead and 1 - fill_t ^ 6 or 0
   local fill, drain = {}, {}
   for i = 0, settings.stops - 1 do -- Stops run along the direction of travel.
     local distance = i / (settings.stops - 1)
-    fill[#fill + 1] = mix(trace.from, trace.to, math.max(0, math.min(1, (fill_level - distance) / edge)))
+    local behind = (fill_level - distance) / edge -- Stops behind the fill line.
+    local head = trace.to
+    if glow > 0 and behind < 2 then
+      -- Brightest at the tip, back to the plain colour one stop behind it:
+      -- the shortest the evenly spaced stops allow.
+      local tail = math.max(0, math.min(1, behind - 1))
+      head = channels(mix(trace.to, trace.lead, glow * (1 - tail)))
+    end
+    fill[#fill + 1] = mix(trace.from, head, math.max(0, math.min(1, behind)))
     drain[#drain + 1] = mix(trace.to, trace.from, math.max(0, math.min(1, (drain_level - distance) / edge)))
   end
   -- Newly focused window: colour enters from the side you came from.
@@ -170,7 +225,8 @@ local function set_paused(paused)
   if paused then
     finish_out()
     trace.timer:set_enabled(false)
-    trace.filling, trace.running = false, false
+    trace.filling, trace.running, trace.animating = false, false, false
+    trace.momentum = 0
     hl.config({ general = { col = { active_border = trace.base } } })
     if ring then
       hl.config({ decoration = { shadow = {
@@ -197,6 +253,7 @@ end
 trace.timer = hl.timer(function()
   -- Time is counted in frames: Hyprland's Lua has no millisecond clock.
   trace.elapsed = trace.elapsed + settings.frame_ms
+  trace.momentum = math.max(0, trace.momentum - MOMENTUM_STEP * settings.frame_ms / settings.momentum_ms)
   if trace.out and trace.elapsed >= settings.drain_ms then finish_out() end
   if trace.filling and trace.elapsed >= trace.fill_ms then
     trace.filling = false
@@ -204,9 +261,16 @@ trace.timer = hl.timer(function()
     hl.config({ general = { col = { active_border = trace.base } } })
   end
   if not trace.filling and not trace.out then
-    trace.timer:set_enabled(false)
-    trace.running = false
-    hl.exec_scheduled_prop_refresh_immediately()
+    if trace.animating then
+      trace.animating = false
+      hl.exec_scheduled_prop_refresh_immediately()
+    end
+    -- The timer keeps counting until the momentum has run down: it is the
+    -- only clock there is.
+    if trace.momentum <= 0 then
+      trace.timer:set_enabled(false)
+      trace.running = false
+    end
     return
   end
   draw()
@@ -229,8 +293,12 @@ hl.on("window.active", function(window)
   trace.angle = travel or 270 -- Bottom-up when there is nothing to come from.
   -- A focus key always animates the way it points, wrap-arounds included.
   if trace.pressed then trace.angle = trace.pressed end
-  trace.fill_ms = fill_ms_for(window)
+  -- Momentum from the moves before this one speeds the fill; this move then
+  -- adds its own share for the next.
+  trace.fill_ms = fill_ms_for(window) / (1 + settings.momentum_speed * trace.momentum)
+  if settings.momentum then trace.momentum = math.min(1, trace.momentum + MOMENTUM_STEP) end
   trace.filling = true
+  trace.animating = true
   trace.last = window.address
   trace.elapsed = 0
   draw() -- First frame right away, so the solid colour never flashes.

@@ -47,6 +47,12 @@ Hyprland reloads on save.
 | `drain_ms` | `130` | Length of the drain, in milliseconds. |
 | `frame_ms` | `16` | Milliseconds between frames. |
 | `ring_focused` / `ring_filling` | `1` / `2` | Extra outline on the focused window, in pixels. Set both to `0` to disable. |
+| `bright_lead` | `true` | Brighten the leading end of the fill line while it travels. `false` turns it off. |
+| `bright_lead_colour` | `"accent"` | Colour of the leading end: `"white"`, a hex colour such as `"#ffcc66"`, or a colour name from the Omarchy theme's `colors.toml`. Falls back to white when the colour is missing or too close to the border colour. |
+| `bright_lead_strength` | `1` | How far the leading end is pushed towards that colour, from `0` to `1`. |
+| `momentum` | `true` | Quick successive focus moves make each fill faster. `false` turns it off. |
+| `momentum_ms` | `300` | Moves closer together than this, in milliseconds, build momentum. |
+| `momentum_speed` | `0.6` | How much faster the fill is at full momentum (`0.6` is 60% faster). |
 | `rebind_focus_keys` | `true` | Rebind `SUPER + arrow` so wrap-arounds animate the way the key points. |
 
 For your own focus binds, call `fluid_focus.focus("l")` (or `"r"`, `"u"`, `"d"`)
