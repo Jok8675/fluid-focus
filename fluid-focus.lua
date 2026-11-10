@@ -1,8 +1,8 @@
--- focus-trace: when focus moves between windows, the border colour drains out
+-- fluid-focus: when focus moves between windows, the border colour drains out
 -- of the old window towards the new one and fills the new window from the side
 -- you came from. Written for Hyprland's Lua config (0.55+), tested on Omarchy.
 --
--- https://github.com/Jok8675/omarchy-focus-trace
+-- https://github.com/Jok8675/fluid-focus
 
 local settings = {
   -- Fill speed: one step per this many pixels of window outline, so larger
@@ -282,5 +282,5 @@ if settings.rebind_focus_keys then
   end
 end
 
--- For your own binds: focus_trace.focus("l" | "r" | "u" | "d")
-focus_trace = { focus = focus_direction }
+-- For your own binds: fluid_focus.focus("l" | "r" | "u" | "d")
+fluid_focus = { focus = focus_direction }

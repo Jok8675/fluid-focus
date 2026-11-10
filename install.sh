@@ -1,15 +1,15 @@
 #!/bin/bash
-# Installs focus-trace into ~/.config/hypr and loads it from hyprland.lua.
+# Installs fluid-focus into ~/.config/hypr and loads it from hyprland.lua.
 set -euo pipefail
 
 HYPR="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
 CONFIG="$HYPR/hyprland.lua"
-LINE='require("hypr.focus-trace")'
+LINE='require("hypr.fluid-focus")'
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-[[ -f $CONFIG ]] || { echo "No $CONFIG found. focus-trace needs Hyprland's Lua config (0.55+)." >&2; exit 1; }
+[[ -f $CONFIG ]] || { echo "No $CONFIG found. fluid-focus needs Hyprland's Lua config (0.55+)." >&2; exit 1; }
 
-cp "$HERE/focus-trace.lua" "$HYPR/focus-trace.lua"
+cp "$HERE/fluid-focus.lua" "$HYPR/fluid-focus.lua"
 
 if ! grep -qxF "$LINE" "$CONFIG"; then
   cp "$CONFIG" "$CONFIG.bak.$(date +%s)"
@@ -21,4 +21,4 @@ if command -v hyprctl >/dev/null && hyprctl reload >/dev/null 2>&1; then
   [[ -z ${errors//[[:space:]]/} ]] || { echo "Hyprland reported config errors:" >&2; echo "$errors" >&2; exit 1; }
 fi
 
-echo "focus-trace installed. Settings are at the top of $HYPR/focus-trace.lua."
+echo "fluid-focus installed. Settings are at the top of $HYPR/fluid-focus.lua."

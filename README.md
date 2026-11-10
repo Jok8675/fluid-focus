@@ -1,10 +1,14 @@
-# focus-trace
+# fluid-focus
 
 A focus animation for Hyprland window borders, built on Omarchy.
 
 When focus moves from one window to another, the border colour drains out of
 the old window towards the new one, and fills the new window from the side you
 came from. The focused window also gets a slightly thicker outline.
+
+![fluid-focus in action](media/fluid-focus.webp)
+
+[Full-resolution video](media/fluid-focus.mp4)
 
 - The fill starts fast and eases to a stop; larger windows take longer.
 - The drain is quick and steady.
@@ -22,18 +26,18 @@ came from. The focused window also gets a slightly thicker outline.
 ## Install
 
 ```bash
-git clone https://github.com/Jok8675/omarchy-focus-trace.git
-cd omarchy-focus-trace
+git clone https://github.com/Jok8675/fluid-focus.git
+cd fluid-focus
 ./install.sh
 ```
 
-The installer copies `focus-trace.lua` to `~/.config/hypr/`, adds
-`require("hypr.focus-trace")` to the end of `hyprland.lua` (keeping a backup),
+The installer copies `fluid-focus.lua` to `~/.config/hypr/`, adds
+`require("hypr.fluid-focus")` to the end of `hyprland.lua` (keeping a backup),
 and reloads Hyprland.
 
 ## Settings
 
-Edit the `settings` table at the top of `~/.config/hypr/focus-trace.lua`.
+Edit the `settings` table at the top of `~/.config/hypr/fluid-focus.lua`.
 Hyprland reloads on save.
 
 | Setting | Default | What it does |
@@ -45,7 +49,7 @@ Hyprland reloads on save.
 | `ring_focused` / `ring_filling` | `1` / `2` | Extra outline on the focused window, in pixels. Set both to `0` to disable. |
 | `rebind_focus_keys` | `true` | Rebind `SUPER + arrow` so wrap-arounds animate the way the key points. |
 
-For your own focus binds, call `focus_trace.focus("l")` (or `"r"`, `"u"`, `"d"`)
+For your own focus binds, call `fluid_focus.focus("l")` (or `"r"`, `"u"`, `"d"`)
 instead of `hl.dsp.focus({ direction = ... })`.
 
 ## What it changes
