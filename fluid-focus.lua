@@ -17,10 +17,16 @@ local settings = {
   frame_ms = 16,
   -- Colour stops in the moving gradient. Hyprland allows at most 10.
   stops = 10,
+  -- Thickness of the window border the colour flows through, in pixels. nil
+  -- leaves Hyprland's own general:border_size alone. The rings below draw
+  -- outside it, so the focused window's outline is this plus the ring.
+  border_size = 3,
   -- Extra outline on the focused window, in pixels: at rest and while filling.
-  -- Set both to 0 to leave Hyprland's shadow settings alone.
+  -- Set both to 0 to leave Hyprland's shadow settings alone. The filling ring
+  -- comes in late, so one larger than the resting ring swells as the fill lands
+  -- and then shrinks back, which reads as a pulse.
   ring_focused = 1,
-  ring_filling = 2,
+  ring_filling = 1,
   -- Brighten the leading end of the fill line while it travels.
   bright_lead = true,
   -- Colour of the leading end: "white", a hex colour such as "#ffcc66", or the
@@ -56,6 +62,10 @@ local MOMENTUM_STEP = 1 / 3
 -- Hyprland's own border colour fade is off: it blends from the previous colour
 -- on every change, which shows the solid colour for a frame before the fill.
 hl.animation({ leaf = "border", enabled = false })
+
+if settings.border_size then
+  hl.config({ general = { border_size = settings.border_size } })
+end
 
 -- "0xAARRGGBB" -> { a, r, g, b }
 local function channels(colour)

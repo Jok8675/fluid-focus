@@ -50,7 +50,8 @@ Hyprland reloads on save.
 | `fill_min_ms` / `fill_max_ms` | `100` / `640` | Shortest and longest fill, in milliseconds. |
 | `drain_ms` | `130` | Length of the drain, in milliseconds. |
 | `frame_ms` | `16` | Milliseconds between frames. |
-| `ring_focused` / `ring_filling` | `1` / `2` | Extra outline on the focused window, in pixels. Set both to `0` to disable. |
+| `border_size` | `3` | Thickness of the window border, in pixels. `nil` leaves Hyprland's `general:border_size` alone. |
+| `ring_focused` / `ring_filling` | `1` / `1` | Extra outline on the focused window, in pixels, drawn outside the border. Set both to `0` to disable. |
 | `bright_lead` | `true` | Brighten the leading end of the fill line while it travels. `false` turns it off. |
 | `bright_lead_colour` | `"accent"` | Colour of the leading end: `"white"`, a hex colour such as `"#ffcc66"`, or a colour name from the Omarchy theme's `colors.toml`. Falls back to white when the colour is missing or too close to the border colour. |
 | `bright_lead_strength` | `1` | How far the leading end is pushed towards that colour, from `0` to `1`. |
@@ -71,6 +72,9 @@ Read this before installing; the effect needs to take over a few things.
 - **Shadows:** the extra outline is drawn with Hyprland's shadow, so the shadow
   settings are taken over and the `fadeShadow` animation is turned off. Setting
   both ring sizes to `0` leaves shadows alone.
+- **Border size:** `general:border_size` is set from `border_size`, after the
+  rest of your config, so it wins over values set earlier. Set it to `nil` to
+  keep your own.
 - **Focus keys:** `SUPER + arrow` are rebound to the same action, plus a note of
   the direction pressed.
 - **Inactive border colour:** every window is given an explicit copy of the
